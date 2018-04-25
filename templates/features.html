@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="page-header">
+        <h1>Features</h1>
+    </div>
+    <div class="list-group">
+        {% for feature in features %}
+            <a href="" class="list-group-item">
+                <h4 class="list-group-item-heading">{{ feature.title }}</h4>
+                <h4 class="list-group-item-heading">{{ feature.description }}</h4>
+                <h4 class="list-group-item-heading">{{ feature.client.client_name }}</h4>
+                <h4 class="list-group-item-heading">{{ feature.product.product_area }}</h4>
+                <h4 class="list-group-item-heading">{{ feature.priority }}</h4>
+            </a>
+        {% endfor %}
+    </div>
+{%  endblock %}

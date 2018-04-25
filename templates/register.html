@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Engineering Project</title>
+      {% include 'dependencies.html' %}
+      {% import "bootstrap/wtf.html" as wtf %}
+
+  </head>
+  <body>
+
+    <div class="container">
+
+      <form class="form-signin form-size" method="POST" action="/register">
+        <h2 class="form-signin-heading">Sign Up</h2>
+        {{ form.hidden_tag() }}
+        {{ wtf.form_field(form.username) }}
+        {{ wtf.form_field(form.email) }}
+        {{ wtf.form_field(form.password) }}
+        <center><span style="color:red;">{{ error }}</span></center>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign Up</button>
+        <center><h6>Already a member? <a class="btn btn-light" href="/login">Sign In</a></h6></center>
+      </form>
+    </div>
+  </body>
+</html>

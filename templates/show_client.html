@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+      <h1>Client</h1>
+  </div>
+      <div class="panel">
+        <div class="panel-body">
+          <span class="list-group-item">
+            <h4 class="list-group-item-heading">Client Name: {{ client.client_name }}</h4></span>
+            <a class="btn btn-danger" href="{{ url_for('delete_client', id=client.id) }}" role="button">Delete Client</a>
+            <a class="btn btn-warning" href="{{ url_for('edit_client', id=client.id) }}" role="button">Edit Client</a>
+        </div>
+      </div>
+
+      <h2>Features</h2>
+      <div class="panel">
+        <div class="panel-body row">
+            {% for feature in client.features %}
+            <div class="col-lg-8">
+            <a href="" class="list-group-item">
+                <h4 class="list-group-item-heading">Feature: {{ feature.title }}</h4>
+                <h4 class="list-group-item-heading">Product: {{ feature.product.product_area }}</h4>
+                <h4 class="list-group-item-heading">Priority:  {{ feature.priority }}</h4>
+                <p class="list-group-item-text">Desc: {{ feature.description }}</p>
+            </a>
+          </div>
+          <div class="col-sm-3">
+            <a class="btn btn-warning" href="{{ url_for('get_feature', id=feature.id) }}" role="button">Edit Feature</a>
+              <a class="btn btn-danger" href="{{ url_for('delete_feature', id=feature.id) }}" role="button">Delete Feature</a>
+            </div>
+            {% endfor %}
+        </div>
+      </div>
+{% endblock %}

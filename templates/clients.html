@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="page-header">
+        <h1>Clients</h1>
+    </div>
+    <div class="form-size">
+      <form action="" method="post" data-bind="submit: addClient">
+        <div class="form-group">
+                  <label for="name">Add Client</label>
+                  <input type="text" class="form-control" id="name" name="name" placeholder="Name" data-bind="value: newClient">
+        </div>
+        <button type="submit" class="btn btn-default">Add Client</button>
+      </form>
+    </div>
+    <div class="panel">
+      <!-- ko foreach: clients, visible: clients().length > 0 -->
+        <div class="panel-body">
+            <a data-bind="click: $parent.showFeatures" class="list-group-item">
+              <input type="text" class="list-group-item-heading" data-bind="visible: isEdit, value: clientName" />
+              <h4 class="list-group-item-heading" data-bind="visible: isView, text: clientName"></h4></a>
+
+            <a class="btn btn-danger" href="#" role="button" data-bind="visible: isView, click: $parent.deleteClient">Delete Client</a>
+            <a class="btn btn-warning" href="#" role="button" data-bind="visible: isView, click: $parent.editable">Edit Client</a>
+            <a class="btn btn-warning" href="#" role="button" data-bind="visible: isEdit, click: $parent.editClient">Save</a>
+        </div>
+        <div data-bind="visible: isFeature">
+        <h3>Features</h3>
+
+          <div class="panel-body row">
+              <!-- ko foreach: features -->
+              <div class="col-lg-8">
+                <a href="#" class="list-group-item">
+                    <h4 class="list-group-item-heading" data-bind="text: title"></h4>
+                    <h4 class="list-group-item-heading" data-bind="text: product"></h4>
+                    <h4 class="list-group-item-heading" data-bind="text: priority"></h4>
+                    <p class="list-group-item-text" data-bind="text: description"></p>
+                </a>
+              </div>
+              <div class="col-sm-3">
+              <a class="btn btn-warning" data-bind="attr: { href: '/feature' + '/' + id }" role="button">Edit Feature</a>
+              <a class="btn btn-danger" data-bind="attr: { href: '/feature/delete' + '/' + id }" role="button">Delete Feature</a>
+              </div>
+              <!-- /ko -->
+          </div>
+        </div>
+        <!-- /ko -->
+  </div>
+{%  endblock %}
+{% block scriptContent %}
+  <script type="text/javascript">
+      function Client(data) {
+          this.id = ko.observable(data.id)
+          this.clientName = ko.observable(data.clientName);
+          this.features = ko.observable(data.features);
+          this.isView = ko.observable(true);
+          this.isEdit = ko.observable(data.isEdit);
+          this.isFeature = ko.observable(data.isFeature);
+      }
+
+      function ClientViewModel(){
+        var self = this;
+        self.clients = ko.observableArray([]);
+        self.newClient = ko.observable();
+
+        self.saveArray = ko.observableArray([]);
+
+        self.ajax = function(uri, method, data) {
+            var request = {
+                url: uri,
+                type: method,
+                contentType: "application/json",
+                accepts: "application/json",
+                cache: false,
+                dataType: 'json',
+                data: data ? data : null,
+                error: function(jqXHR) {
+                    console.log("ajax error " + jqXHR.status);
+                }
+            };
+            return $.ajax(request).fail(function (jqXHR, textStatus, errorThrown) {
+                  alert('Error : ' + errorThrown);
+              });
+        };
+
+        self.addClient = function(){
+          self.saveArray.removeAll();
+          var client = new Client({clientName: this.newClient()});
+          self.saveArray.push(client);
+          self.ajax('/api/v1/client/save','POST', ko.toJSON({ list : self.saveArray })).done(function(Data) {
+            self.newClient("");
+            self.getAll();
+
+          });
+        };
+
+        self.editClient = function(client){
+          self.saveArray.removeAll();
+          self.saveArray.push(client);
+
+          self.ajax('/api/v1/client/save','POST', ko.toJSON({ list : self.saveArray })).done(function(Data) {
+            self.getAll();
+
+          });
+        };
+
+        self.deleteClient = function(client) {
+          url = '/api/v1/client/delete/'+ client.id()
+          self.ajax(url,'GET').done(function(Data) {
+            self.getAll();
+          });
+        };
+
+        self.getAll = function(){
+          self.ajax('/api/v1/clients', 'GET').done(function(allData) {
+          var allClients = $.map(allData.json, function(item) { return new Client(item) });
+          self.clients(allClients);
+        });
+      };
+
+        self.editable = function(client){
+            client.isEdit(true);
+            client.isView(false);
+        };
+
+        self.showFeatures = function(client){
+          if(client.isFeature()){
+            client.isFeature(false)
+          }else{
+          client.isFeature(true);
+          }
+        }
+        self.ajax('/api/v1/clients', 'GET').done(function(allData) {
+        var allClients = $.map(allData.json, function(item) { return new Client(item) });
+        self.clients(allClients);
+      });
+      }
+      ko.applyBindings(new ClientViewModel());
+  </script>
+{% endblock %}
