@@ -15,17 +15,7 @@ class AppTestCase(unittest.TestCase):
         """teardown all initialized variables."""
         print("tearing down")
 
-    def test_01_clients_api_get_all(self):
-        res = self.client.get('/api/v1/clients')
-        cust_response = json.loads(res.data.decode('utf-8'))
-        self.assertEqual(cust_response['status'], 200)
-        self.assertGreater(cust_response['total'], 0)
-
-    def test_02_client_api_delete_wrong(self):
-        res = self.client.get('/api/v1/client/delete/120')
-        self.assertEqual(res.status_code, 404)
-
-    def test_03_client_api_post(self):
+    def test_01_client_api_post(self):
         client = Client.query.all()
         counter = len(client)
 
@@ -40,6 +30,16 @@ class AppTestCase(unittest.TestCase):
         client_after_insert = Client.query.all()
         self.assertEqual(len(client_after_insert), counter+1)
 
+    def test_02_clients_api_get_all(self):
+        res = self.client.get('/api/v1/clients')
+        cust_response = json.loads(res.data.decode('utf-8'))
+        self.assertEqual(cust_response['status'], 200)
+        self.assertGreater(cust_response['total'], 0)
+
+    def test_03_client_api_delete_wrong(self):
+        res = self.client.get('/api/v1/client/delete/120')
+        self.assertEqual(res.status_code, 404)
+
 
     def test_04_client_delete(self):
         client = Client.query.filter_by(client_name="testClient").first()
@@ -51,17 +51,7 @@ class AppTestCase(unittest.TestCase):
         client = Client.query.filter_by(client_name="test").first()
         self.assertIsNone(client)
 
-    def test_05_products_api_get_all(self):
-        res = self.client.get('/api/v1/products')
-        cust_response = json.loads(res.data.decode('utf-8'))
-        self.assertEqual(cust_response['status'], 200)
-        self.assertGreater(cust_response['total'], 0)
-
-    def test_06_product_api_delete_wrong(self):
-        res = self.client.get('/api/v1/product/delete/120')
-        self.assertEqual(res.status_code, 404)
-
-    def test_07_product_api_post(self):
+    def test_05_product_api_post(self):
         product = Product.query.all()
         counter = len(product)
         jsonStr = {"list":[{"productArea": "testProduct"}]}
@@ -74,7 +64,16 @@ class AppTestCase(unittest.TestCase):
 
         product_after_insert = Product.query.all()
         self.assertEqual(len(product_after_insert), counter+1)
+            
+    def test_06_products_api_get_all(self):
+        res = self.client.get('/api/v1/products')
+        cust_response = json.loads(res.data.decode('utf-8'))
+        self.assertEqual(cust_response['status'], 200)
+        self.assertGreater(cust_response['total'], 0)
 
+    def test_07_product_api_delete_wrong(self):
+        res = self.client.get('/api/v1/product/delete/120')
+        self.assertEqual(res.status_code, 404)
 
     def test_08_product_delete(self):
         product = Product.query.filter_by(product_area="testProduct").first()
