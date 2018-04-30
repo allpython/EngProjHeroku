@@ -6,12 +6,14 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField
 from wtforms.validators import InputRequired, Email, Length
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, date
 import json
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL'] #'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'secret_key'
+app.secret_key = '\xbf\xb0\x11\xb1\xcd\xf9\xba\x8b\x0c'
 
 db = SQLAlchemy(app)
 bootstrap = Bootstrap(app)
@@ -64,7 +66,7 @@ class Client(db.Model):
         self.client_name = client_name
 
     def to_json(self):
-        features = FeatureRequest.query.filter_by(client_id=self.id).all()
+        features = FeatureRequest.query.filter_by(client_id=self.id).order_by(FeatureRequest.priority).all()
         features_json = []
         for feature in features:
             features_json.append(feature.to_json())
@@ -109,13 +111,41 @@ class FeatureRequest(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
     priority = db.Column(db.Integer)
+    isDone = db.Column(db.Boolean, default='False')
+    target_date = db.Column(db.Date, nullable=False, default=datetime.now().date().strftime('%Y-%m-%d'))
 
-    def __init__(self, title, description, client_id, product_id, priority):
+    def __init__(self, title, description, client_id, product_id, priority, target_date, isDone=None):
         self.title = title
         self.description = description
         self.client_id = client_id
         self.product_id = product_id
         self.priority = priority
+        if isDone is None:
+            self.isDone = False
+        else:
+            self.isDone =   isDone
+        self.target_date = target_date
+
+    @classmethod
+    def from_json(cls, jsonStr):
+        title = jsonStr.get('title')
+        description = jsonStr.get('description')
+        priority = jsonStr.get('priority')
+        client_id = jsonStr.get('clientId')
+        product_id = jsonStr.get('productId')
+        isDone = jsonStr.get('isDone')
+        target_date = datetime.strptime(jsonStr.get('targetDate'), '%Y-%m-%d')
+        return cls(title=title, description=description, priority=priority,
+        client_id=client_id, product_id=product_id, target_date=target_date, isDone=isDone)
+
+    def copy_values(self, feature):
+        self.title = feature.title
+        self.description = feature.description
+        self.client_id = feature.client_id
+        self.product_id = feature.product_id
+        self.priority = feature.priority
+        self.isDone =   feature.isDone
+        self.target_date = feature.target_date
 
     def to_json(self):
         return {
@@ -124,7 +154,11 @@ class FeatureRequest(db.Model):
             "description": self.description,
             "priority": self.priority,
             "client": self.client.client_name,
-            "product": self.product.product_area
+            "clientId": self.client.id,
+            "product": self.product.product_area,
+            "productId": self.product.id,
+            "isDone": self.isDone,
+            "targetDate": self.target_date.strftime('%Y-%m-%d')
         }
 
 @app.before_first_request
@@ -285,17 +319,23 @@ def new_client():
 @app.route("/featureRequest", methods=["GET", "POST"])
 @login_required
 def feature_request():
+    #from IPython import embed; embed()
     if request.method == 'POST':
-        #from IPython import embed; embed()
+
         title = request.form['title']
         description = request.form['description']
         client_id = request.form['client']
         product_id = request.form['product']
         priority = request.form['priority']
+        target_date = datetime.strptime(request.form['targetDate'], '%Y-%m-%d')
         exis_feature = FeatureRequest.query.filter_by(title=title).filter_by(client_id=client_id).filter_by(product_id=product_id).first()
         if exis_feature:
+            exis_feature.description = description
+            exis_feature.priority = priority
+            db.session.add(exis_feature)
+            db.session.commit()
             return redirect(url_for('get_client', id=client_id))
-        features_list = FeatureRequest.query.filter_by(client_id=client_id).filter_by(product_id=product_id).order_by(priority).all()
+        features_list = FeatureRequest.query.filter_by(client_id=client_id).filter_by(product_id=product_id).order_by(FeatureRequest.priority).all()
 
         flag = False
         for feature in features_list:
@@ -307,12 +347,13 @@ def feature_request():
                 db.session.add(feature)
                 db.session.commit()
 
-        feature = FeatureRequest(title=title, description=description, client_id=client_id, product_id=product_id, priority=priority)
+        feature = FeatureRequest(title=title, description=description, client_id=client_id,
+                        product_id=product_id, priority=priority, target_date=target_date )
         db.session.add(feature)
         db.session.commit()
 
 
-        return redirect(url_for('get_client', id=client_id))
+        return redirect(url_for('clients_base'))
 
     clients = Client.query.order_by(Client.id).all()
     products = Product.query.order_by(Product.id).all()
@@ -330,13 +371,14 @@ def get_feature(id):
             feature.client_id = request.form['client']
             feature.product_id = request.form['product']
             feature.priority = request.form['priority']
-
+            feature.target_date = datetime.strptime(request.form['targetDate'], '%Y-%m-%d')
             db.session.add(feature)
             db.session.commit()
-            return redirect(url_for('get_client', id=feature.client_id))
+            return redirect(url_for('clients_base'))
 
         clients = Client.query.order_by(Client.id).all()
         products = Product.query.order_by(Product.id).all()
+        feature.target_date = feature.target_date.strftime('%Y-%m-%d')
         return render_template('show_feature.html', clients=clients, products=products, feature=feature)
     return redirect(url_for('home'))
 
@@ -387,6 +429,12 @@ def add_or_update_product():
 @login_required
 def delete_product_v1(id):
     return delete_item(Product, id)
+
+@app.route('/api/v1/feature/save', methods=['POST'])
+@login_required
+def add_or_update_feature():
+    #from IPython import embed; embed()
+    return add_or_update_items(FeatureRequest, request)
 
 """
 @app.route('/api/v1/client/<int:id>')

@@ -6,9 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Engineering Project</title>
     {% include 'dependencies.html' %}
+
+    {% block dependencies %}
+
+    {% endblock %}
+
     {% block script %}
 
     {% endblock %}
+    <script type="text/javascript">
+      $(document).ready(function() {
+        $('li.active').removeClass('active');
+        $('a[href="' + location.pathname + '"]').closest('li').addClass('active');
+    });
+    </script>
 
 </head>
 <body>
@@ -28,7 +39,7 @@
             <ul class="nav navbar-nav navbar-right">
                 <!--<li><a href="" title="Your Alerts"><span class="glyphicon glyphicon-user"></span> Your Alerts</a></li>
                 <li><a href="/logout" title="Log Out"><span class="glyphicon glyphicon-log-out"></span> Log out</a></li>-->
-                <li><a href="{{ url_for('feature_request')}}">Record Feature</a></li>
+                <li class="active"><a href="{{ url_for('feature_request')}}">Record Feature</a></li>
                 <li><a href="{{ url_for('clients_base') }}">Clients</a></li>
                 <li><a href="{{ url_for('products_base') }}">Products</a></li>
                 <li><a href="{{ url_for('logout') }}">Log Out</a></li>
