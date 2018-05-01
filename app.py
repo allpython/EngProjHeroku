@@ -213,7 +213,7 @@ def register():
 @login_required
 def logout():
     logout_user()
-    session['email'] = None
+    session['user_id'] = None
     return redirect(url_for('root'))
 
 @app.route("/clients")
@@ -388,7 +388,7 @@ def delete_feature(id):
     if feature:
         db.session.delete(feature)
         db.session.commit()
-        return redirect(url_for('get_client', id=feature.client_id))
+        return redirect(url_for('clients_base'))
     return redirect(url_for('home'))
 
 @app.route("/features")

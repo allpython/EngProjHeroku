@@ -12,4 +12,4 @@ deploy:
   provider: heroku
   api_key:
     secure: 26edc6db-b707-4520-84f3-85dee23e3fcb
-  app:  flask-eng-project
+  app:  featurerequest
