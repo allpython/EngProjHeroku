@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block dependencies %}
+{% include 'client_modal.html' %}
+{% include 'product_modal.html' %}
+
+{% endblock %}
+
+{% block content %}
+<center><h1> Welcome to the Feature Request App! </h1></center>
+<div class="page-header">
+        <h1 style="text-align: center;">Feature Request Form</h1>
+</div>
+<div class="form-size">
+    <form action="{{ url_for('features.feature_request') }}" method="post">
+        <div class="form-group">
+            <input type="text" class="form-control" id="title" name="title" placeholder="Title" required data-validation-required-message="Please enter a title.">
+        </div>
+        <div class="form-group">
+            <textarea rows="5" class="form-control" placeholder="Feature Description" name="description" id="description" required data-validation-required-message="Please enter a description."></textarea>
+        </div>
+        <div class="form-group">
+            <input type="number" min="1" class="form-control" id="priority" name="priority" required placeholder="Priority: 1,2,3 .. n" aria-describedby="priorityHelp">
+            <span id="priorityHelp" class="help-block">Numbers only. This will define the priority or order of feature execution.</span>
+        </div>
+        <div class="form-group">
+          Target Date:<input type="text" required name="targetDate" id="targetDate" class="form-control" placeholder="YYYY-MM-DD"/>
+          <!--<input type="date" required name="targetDate" id="targetDate" class="form-control" title="Enter a date in this format YYYY-MM-DD">-->
+        </div>
+        <div class="form-group">
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="input-group">
+
+                <!--<select class="form-control" id="client" name="client" required>
+                  <option value="">Select Client</option>
+                  {% for client in clients %}
+                  <option value="{{ client.id }}">{{ client.client_name }}</option>
+                  {% endfor %}
+                </select>-->
+                <select class="form-control" id="client" name="client" required data-bind="options: clients,
+                       optionsText: 'clientName',
+                       optionsValue: 'id',
+                       optionsCaption: 'Select Client'"></select>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="input-group">
+                  <a class="btn btn-primary" data-toggle="modal" data-target="#addClientModal" href="#"><span
+                                  class="glyphicon glyphicon-plus"></span> Add Client</a>
+                <!--<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addClientModal"></button>-->
+              </div>
+            </div>
+
+          </div>
+
+
+      </div>
+      <div class="form-group">
+        <div class="row">
+          <div class="col-lg-6">
+            <div class="input-group">
+              <!--<select class="form-control" id="product" name="product" required>
+                <option value="">Select Product</option>
+                {% for product in products %}
+                <option value="{{ product.id }}">{{ product.product_area }}</option>
+                {% endfor %}
+              </select>-->
+              <select class="form-control" id="product" name="product" required data-bind="options: products,
+                     optionsText: 'productArea',
+                     optionsValue: 'id',
+                     optionsCaption: 'Select Product'"></select>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="input-group">
+              <a class="btn btn-primary" data-toggle="modal" data-target="#addProductModal" href="#"><span
+                              class="glyphicon glyphicon-plus"></span> Add Product</a>
+            </div>
+          </div>
+    </div>
+  </div>
+        <button type="submit" class="btn btn-warning">Create Request</button>
+    </form>
+</div>
+  <hr>
+{% endblock %}
+{% block scriptContent %}
+  <script type="text/javascript">
+  $( document ).ready(function() {
+    $(function() {
+        $( "#targetDate" ).datepicker({
+          dateFormat: "dd-mm-yy"
+        });
+      });
+      var error = '{{ error }}'
+      if(error != null && error != ""){
+        $('#errorModal').find('.modal-body').append('<p>'+ error + '</p>');
+        $('#errorModal').modal('show');
+      }
+    });
+      function Client(data) {
+          this.id = ko.observable(data.id);
+          this.clientName = ko.observable(data.clientName);
+        }
+      function Product(data){
+        this.id = ko.observable(data.id);
+        this.productArea = ko.observable(data.productArea);
+      }
+      function ViewModel(){
+        var self = this;
+        self.clients = ko.observableArray([]);
+        self.products = ko.observableArray([]);
+        self.newClient = ko.observable();
+        self.newProduct = ko.observable();
+
+        self.saveArray = ko.observableArray([]);
+
+        self.ajax = function(uri, method, data) {
+            var request = {
+                url: uri,
+                type: method,
+                contentType: "application/json",
+                accepts: "application/json",
+                cache: false,
+                dataType: 'json',
+                data: data ? data : null,
+                error: function(jqXHR) {
+                    alert("Error Occured. Try again");
+                }
+            };
+            return $.ajax(request).fail(function (jqXHR, textStatus, errorThrown) {
+                  alert('Error : ' + errorThrown);
+              });
+        };
+
+        self.addClient = function(){
+          self.saveArray.removeAll();
+          var client = new Client({clientName: this.newClient()});
+          self.saveArray.push(client);
+          self.ajax('/api/v1/client/save','POST', ko.toJSON({ list : self.saveArray })).done(function(Data) {
+            self.newClient("");
+            $('#addClientModal').modal('hide');
+            self.getAllClients();
+
+          });
+        };
+
+        self.addProduct = function(){
+          self.saveArray.removeAll();
+          var product = new Product({productArea: this.newProduct()});
+          self.saveArray.push(product);
+          self.ajax('/api/v1/product/save','POST', ko.toJSON({ list : self.saveArray })).done(function(Data) {
+            self.newProduct("");
+            $('#addProductModal').modal('hide');
+            self.getAllProducts();
+
+          });
+        };
+
+        self.getAllClients = function(){
+          self.ajax('/api/v1/clients', 'GET').done(function(allData) {
+          var allClients = $.map(allData.json, function(item) { return new Client(item) });
+          self.clients(allClients);
+        });
+      };
+
+      self.getAllProducts = function(){
+        self.ajax('/api/v1/products', 'GET').done(function(allData) {
+        var allProducts = $.map(allData.json, function(item) { return new Product(item) });
+        self.products(allProducts);
+        });
+      };
+
+      self.ajax('/api/v1/clients', 'GET').done(function(allData) {
+        var allClients = $.map(allData.json, function(item) { return new Client(item) });
+        self.clients(allClients);
+      });
+
+      self.ajax('/api/v1/products', 'GET').done(function(allData) {
+        var allProducts = $.map(allData.json, function(item) { return new Product(item) });
+        self.products(allProducts);
+      });
+      }
+      ko.applyBindings(new ViewModel());
+  </script>
+{% endblock %}

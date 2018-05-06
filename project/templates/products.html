@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Products</h1>
+</div>
+<div class="form-size">
+  <form action="" method="post" data-bind="submit: addProduct">
+    <div class="form-group">
+              <label for="name">Add Product</label>
+              <input type="text" class="form-control" id="name" name="name" placeholder="Name" data-bind="value: newProduct" required>
+    </div>
+    <button type="submit" class="btn btn-default">Add Product</button>
+  </form>
+</div>
+<div class="panel">
+  <!-- ko foreach: products -->
+    <div class="panel-body">
+        <a href="#" class="list-group-item">
+          <input type="text" class="list-group-item-heading" data-bind="visible: isEdit, value: productArea" />
+          <h4 class="list-group-item-heading" data-bind="visible: isView, text: productArea"></h4></a>
+
+        <a class="btn btn-danger" href="" role="button" data-bind="visible: isView, click: $parent.deleteProduct">Delete Product</a>
+        <a class="btn btn-warning" href="" role="button" data-bind="visible: isView, click: $parent.editable">Edit Product</a>
+        <a class="btn btn-warning" href="" role="button" data-bind="visible: isEdit, click: $parent.editProduct">Save</a>
+    </div>
+    <!-- /ko -->
+</div>
+{%  endblock %}
+{% block scriptContent %}
+<script type="text/javascript">
+  function Product(data) {
+      this.id = ko.observable(data.id)
+      this.productArea = ko.observable(data.productArea);
+      this.isView = ko.observable(true);
+      this.isEdit = ko.observable(data.isEdit);
+  }
+
+  function ProductViewModel(){
+    var self = this;
+    self.products = ko.observableArray([]);
+    self.newProduct = ko.observable();
+
+    self.saveArray = ko.observableArray([]);
+
+    self.ajax = function(uri, method, data) {
+        var request = {
+            url: uri,
+            type: method,
+            contentType: "application/json",
+            accepts: "application/json",
+            cache: false,
+            dataType: 'json',
+            data: data ? data : null,
+            error: function(jqXHR) {
+                console.log("ajax error " + jqXHR.status);
+            }
+        };
+        return $.ajax(request).fail(function (jqXHR, textStatus, errorThrown) {
+              alert('Error : ' + errorThrown);
+          });
+    };
+
+    self.addProduct = function(){
+      self.saveArray.removeAll();
+      var product = new Product({productArea: this.newProduct()});
+      self.saveArray.push(product);
+      self.ajax('/api/v1/product/save','POST', ko.toJSON({ list : self.saveArray })).done(function(Data) {
+        self.newProduct("");
+        self.getAll();
+
+      });
+    };
+
+    self.editProduct = function(product){
+      self.saveArray.removeAll();
+      self.saveArray.push(product);
+
+      self.ajax('/api/v1/product/save','POST', ko.toJSON({ list : self.saveArray })).done(function(Data) {
+        self.getAll();
+
+      });
+    };
+
+    self.deleteProduct = function(product) {
+      url = '/api/v1/product/delete/'+ product.id()
+      self.ajax(url,'GET').done(function(Data) {
+        self.getAll();
+      });
+    };
+
+    self.getAll = function(){
+      self.ajax('/api/v1/products', 'GET').done(function(allData) {
+      var allProducts = $.map(allData.json, function(item) { return new Product(item) });
+      self.products(allProducts);
+    });
+  };
+
+    self.editable = function(product){
+        product.isEdit(true);
+        product.isView(false);
+    };
+    self.ajax('/api/v1/products', 'GET').done(function(allData) {
+    var allProducts = $.map(allData.json, function(item) { return new Product(item) });
+    self.products(allProducts);
+  });
+  }
+  ko.applyBindings(new ProductViewModel());
+</script>
+{% endblock %}
