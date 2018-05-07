@@ -23,6 +23,7 @@
         <a class="btn btn-danger" href="" role="button" data-bind="visible: isView, click: $parent.deleteProduct">Delete Product</a>
         <a class="btn btn-warning" href="" role="button" data-bind="visible: isView, click: $parent.editable">Edit Product</a>
         <a class="btn btn-warning" href="" role="button" data-bind="visible: isEdit, click: $parent.editProduct">Save</a>
+        <a class="btn btn-warning" href="#" role="button" data-bind="visible: isEdit, click: $parent.editable">Cancel</a>
     </div>
     <!-- /ko -->
 </div>
@@ -95,10 +96,14 @@
       self.products(allProducts);
     });
   };
-
-    self.editable = function(product){
+    self.editable = function(client){
+        if(product.isView()){
         product.isEdit(true);
         product.isView(false);
+      }else{
+        product.isEdit(false);
+        product.isView(true);
+      }
     };
     self.ajax('/api/v1/products', 'GET').done(function(allData) {
     var allProducts = $.map(allData.json, function(item) { return new Product(item) });
